@@ -34,12 +34,6 @@ final class SpeechRecognitionService: @unchecked Sendable {
     func startRecording(language: Locale) async throws -> String {
         os_log("[SpeechService] startRecording called for %{public}@", log: .default, type: .info, language.identifier)
         return try await withCheckedThrowingContinuation { continuation in
-            // Safety timeout: if nothing resumes the continuation within 30s, force it
-            let timeoutTask = Task {
-                try await Task.sleep(nanoseconds: 30 * 1_000_000_000)
-                self.finishRecording(error: ConversationError.recognitionFailed("Timeout della registrazione"))
-            }
-
             lock.lock()
             defer { lock.unlock() }
 
