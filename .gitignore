@@ -1,0 +1,38 @@
+# macOS
+.DS_Store
+
+# Xcode — generated project (source of truth is project.yml via XcodeGen)
+reaLang-native.xcodeproj/
+
+# Xcode — user-specific data
+xcuserdata/
+*.xcuserstate
+
+# Xcode — build artifacts
+build/
+DerivedData/
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Swift Package Manager
+.build/
+Package.resolved
+.swiftpm/
+
+# CocoaPods
+Pods/
+*.xcworkspace
+
+# Carthage
+Carthage/Build/
+Carthage/Checkouts/
+
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output
+
+# Code injection
+iOSInjectionProject/

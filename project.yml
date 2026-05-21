@@ -1,0 +1,28 @@
+name: reaLang-native
+options:
+  bundleIdPrefix: com.realang
+  deploymentTarget:
+    iOS: "26.0"
+  xcodeVersion: "16.0"
+
+targets:
+  reaLangNative:
+    type: application
+    platform: iOS
+    sources:
+      - Sources
+    resources:
+      - Resources
+    settings:
+      base:
+        INFOPLIST_FILE: Resources/Info.plist
+        PRODUCT_BUNDLE_IDENTIFIER: com.realang.realang-native
+        PRODUCT_NAME: reaLang
+        SWIFT_VERSION: "6.0"
+        TARGETED_DEVICE_FAMILY: "1"
+        SUPPORTS_MACCATALYST: NO
+        SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: NO
+    dependencies:
+      - sdk: Speech.framework
+      - sdk: AVFoundation.framework
+      - sdk: Translation.framework
