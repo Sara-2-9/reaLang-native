@@ -13,7 +13,7 @@ enum ConversationError: Error, LocalizedError {
         case .microphoneNotAuthorized:
             return "Autorizzazione microfono negata."
         case .translationNotSupported:
-            return "Traduzione non supportata per questa coppia di lingue."
+            return "Traduzione non supportata per questa coppia di lingue. Verifica che il dispositivo supporti Apple Intelligence e che i modelli di traduzione siano disponibili."
         case .recognitionFailed(let message):
             return message
         }

@@ -22,6 +22,8 @@ targets:
         TARGETED_DEVICE_FAMILY: "1"
         SUPPORTS_MACCATALYST: NO
         SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: NO
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: 64LFM6JL2J
     dependencies:
       - sdk: Speech.framework
       - sdk: AVFoundation.framework

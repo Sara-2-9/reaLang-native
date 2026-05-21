@@ -1,4 +1,5 @@
 import SwiftUI
+import Translation
 
 struct ConversationView: View {
     let session: ConversationSession
@@ -8,6 +9,21 @@ struct ConversationView: View {
         VStack(spacing: 0) {
             messageList
             controls
+        }
+        .translationTask(session.translationConfig) { translationSession in
+            guard let text = await MainActor.run(body: { session.pendingTranslationText }) else { return }
+            do {
+                let response = try await Task {
+                    try await translationSession.translate(text)
+                }.value
+                await MainActor.run {
+                    session.finalizeTranslation(response: response)
+                }
+            } catch {
+                await MainActor.run {
+                    session.handleTranslationError(error)
+                }
+            }
         }
         .navigationTitle("Conversazione")
         .navigationBarTitleDisplayMode(.inline)
@@ -19,10 +35,13 @@ struct ConversationView: View {
                 }
             }
         }
-        .alert("Errore", isPresented: .constant(session.errorMessage != nil)) {
-            Button("OK") { session.errorMessage = nil }
+        .alert("Errore", isPresented: errorBinding) {
+            Button("OK") { session.clearError() }
         } message: {
             Text(session.errorMessage ?? "")
+        }
+        .onDisappear {
+            session.stopListening()
         }
     }
 
@@ -34,7 +53,6 @@ struct ConversationView: View {
                 LazyVStack(spacing: 12) {
                     ForEach(session.messages) { message in
                         MessageBubbleView(message: message)
-                            .id(message.id)
                     }
                 }
                 .padding()
@@ -55,14 +73,14 @@ struct ConversationView: View {
                 PushToTalkButton(
                     label: languageName(for: session.languageA),
                     isListening: session.isListeningA,
-                    onPress: { session.startListening(userA: true) },
+                    onPress: { Task { await session.startListening(userA: true) } },
                     onRelease: { session.stopListening() }
                 )
 
                 PushToTalkButton(
                     label: languageName(for: session.languageB),
                     isListening: session.isListeningB,
-                    onPress: { session.startListening(userA: false) },
+                    onPress: { Task { await session.startListening(userA: false) } },
                     onRelease: { session.stopListening() }
                 )
             }
@@ -84,5 +102,12 @@ struct ConversationView: View {
 
     private func languageName(for locale: Locale) -> String {
         Locale.current.localizedString(forIdentifier: locale.identifier) ?? locale.identifier
+    }
+
+    private var errorBinding: Binding<Bool> {
+        Binding(
+            get: { session.errorMessage != nil },
+            set: { if !$0 { session.clearError() } }
+        )
     }
 }

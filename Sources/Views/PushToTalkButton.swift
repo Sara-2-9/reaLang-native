@@ -6,12 +6,12 @@ struct PushToTalkButton: View {
     let onPress: () -> Void
     let onRelease: () -> Void
 
+    @GestureState private var isPressed = false
+
     var body: some View {
         let gesture = DragGesture(minimumDistance: 0)
-            .onChanged { _ in
-                if !isListening {
-                    onPress()
-                }
+            .updating($isPressed) { _, state, _ in
+                state = true
             }
             .onEnded { _ in
                 onRelease()
@@ -20,7 +20,8 @@ struct PushToTalkButton: View {
         VStack(spacing: 8) {
             Image(systemName: isListening ? "waveform" : "mic.fill")
                 .font(.system(size: 32, weight: .semibold))
-                .symbolEffect(.bounce, options: .repeating, value: isListening)
+                .scaleEffect(isListening ? 1.15 : 1.0)
+                .animation(.easeInOut(duration: 0.3), value: isListening)
 
             Text(label)
                 .font(.caption.bold())
@@ -32,8 +33,14 @@ struct PushToTalkButton: View {
             RoundedRectangle(cornerRadius: 20)
                 .stroke(isListening ? Color.red : Color.clear, lineWidth: 2)
         )
-        .gesture(gesture)
+        .simultaneousGesture(gesture)
+        .onChange(of: isPressed) { _, newValue in
+            if newValue {
+                onPress()
+            }
+        }
         .sensoryFeedback(.impact, trigger: isListening)
+        .accessibilityAddTraits(.isButton)
         .accessibilityLabel("Parla in \(label)")
         .accessibilityHint("Tieni premuto per parlare. Rilascia per inviare.")
     }
