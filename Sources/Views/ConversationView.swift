@@ -8,6 +8,8 @@ struct ConversationView: View {
     var body: some View {
         VStack(spacing: 0) {
             messageList
+            statusBanner
+            phaseLogView
             controls
         }
         .translationTask(session.translationConfig) { translationSession in
@@ -65,6 +67,55 @@ struct ConversationView: View {
                 }
             }
         }
+    }
+
+    private var statusBanner: some View {
+        Text(session.phase.rawValue)
+            .font(.subheadline.bold())
+            .foregroundStyle(.white)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 10)
+            .background(phaseColor)
+            .animation(.easeInOut, value: session.phase)
+    }
+
+    private var phaseColor: Color {
+        switch session.phase {
+        case .idle:
+            return .green
+        case .listening:
+            return .red
+        case .transcribed:
+            return .orange
+        case .translating:
+            return .blue
+        case .speaking:
+            return .purple
+        case .error:
+            return .red
+        }
+    }
+
+    private var phaseLogView: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Cronologia stati")
+                .font(.caption.bold())
+                .foregroundStyle(.secondary)
+                .padding(.horizontal)
+
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 2) {
+                    ForEach(session.phaseHistory) { entry in
+                        Text(entry.text)
+                            .font(.caption2.monospaced())
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .padding(.horizontal)
+            }
+            .frame(maxHeight: 80)
+        }
+        .padding(.vertical, 4)
     }
 
     private var controls: some View {

@@ -4,6 +4,20 @@ import Speech
 import Translation
 import os.log
 
+enum ConversationPhase: String {
+    case idle = "✅ Pronto"
+    case listening = "🎤 In ascolto..."
+    case transcribed = "📝 Trascrizione completata"
+    case translating = "🌐 Traduzione in corso..."
+    case speaking = "🔊 Lettura in corso..."
+    case error = "⚠️ Errore"
+}
+
+struct PhaseLogEntry: Identifiable {
+    let id = UUID()
+    let text: String
+}
+
 @Observable
 @MainActor
 final class ConversationSession {
@@ -11,6 +25,8 @@ final class ConversationSession {
     private(set) var isListeningA = false
     private(set) var isListeningB = false
     private(set) var errorMessage: String?
+    private(set) var phase: ConversationPhase = .idle
+    private(set) var phaseHistory: [PhaseLogEntry] = []
 
     var languageA: Locale = .init(identifier: "it_IT")
     var languageB: Locale = .init(identifier: "en_US")
@@ -22,6 +38,24 @@ final class ConversationSession {
 
     private let speechService = SpeechRecognitionService()
     private let ttsService = TextToSpeechService()
+    private var idleTask: Task<Void, Never>?
+
+    private func setPhase(_ newPhase: ConversationPhase) {
+        phase = newPhase
+        let entry = PhaseLogEntry(
+            text: "\(Date().formatted(date: .omitted, time: .standard)) — \(newPhase.rawValue)"
+        )
+        phaseHistory.append(entry)
+        if phaseHistory.count > 30 {
+            phaseHistory.removeFirst(phaseHistory.count - 30)
+        }
+        os_log("[reaLang] Phase changed to: %{public}@", log: .default, type: .info, newPhase.rawValue)
+    }
+
+    private func cancelIdleTask() {
+        idleTask?.cancel()
+        idleTask = nil
+    }
 
     // MARK: - Permissions
 
@@ -35,6 +69,7 @@ final class ConversationSession {
 
     func startListening(userA: Bool) async {
         os_log("[reaLang] startListening called, userA: %{public}d, isListeningA: %{public}d, isListeningB: %{public}d", log: .default, type: .info, userA, isListeningA, isListeningB)
+        cancelIdleTask()
         guard !isListeningA && !isListeningB else {
             os_log("[reaLang] BLOCKED: already listening", log: .default, type: .info)
             return
@@ -45,6 +80,7 @@ final class ConversationSession {
         } else {
             isListeningB = true
         }
+        setPhase(.listening)
         os_log("[reaLang] isListening set: A=%{public}d, B=%{public}d", log: .default, type: .info, isListeningA, isListeningB)
 
         let source = userA ? languageA : languageB
@@ -72,8 +108,11 @@ final class ConversationSession {
             os_log("[reaLang] Recording returned text: '%{public}@'", log: .default, type: .info, text)
             guard !text.isEmpty else {
                 os_log("[reaLang] Empty text, aborting", log: .default, type: .info)
+                setPhase(.idle)
                 return
             }
+
+            setPhase(.transcribed)
 
             let availability = LanguageAvailability()
             let status = await availability.status(from: source.language, to: target.language)
@@ -83,6 +122,7 @@ final class ConversationSession {
             }
 
             os_log("[reaLang] Setting up translation task", log: .default, type: .info)
+            setPhase(.translating)
             pendingTranslationText = text
             pendingUserA = userA
             translationConfig = TranslationSession.Configuration(
@@ -91,6 +131,7 @@ final class ConversationSession {
             )
         } catch {
             os_log("[reaLang] ERROR in startListening: %{public}@", log: .default, type: .info, error.localizedDescription)
+            setPhase(.error)
             if let convError = error as? ConversationError {
                 self.errorMessage = convError.localizedDescription
             } else {
@@ -123,7 +164,13 @@ final class ConversationSession {
         )
 
         messages.append(message)
+        setPhase(.speaking)
         ttsService.speak(text: response.targetText, language: target.identifier)
+        idleTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(1))
+            guard let self, !Task.isCancelled else { return }
+            self.setPhase(.idle)
+        }
 
         // Reset pending state
         pendingTranslationText = nil
@@ -132,10 +179,14 @@ final class ConversationSession {
     }
 
     func clearError() {
+        cancelIdleTask()
         errorMessage = nil
+        setPhase(.idle)
     }
 
     func handleTranslationError(_ error: Error) {
+        cancelIdleTask()
+        setPhase(.error)
         if let convError = error as? ConversationError {
             self.errorMessage = convError.localizedDescription
         } else {
@@ -147,6 +198,8 @@ final class ConversationSession {
 
     func endConversation() {
         stopListening()
+        cancelIdleTask()
+        setPhase(.idle)
         messages.removeAll()
         translationConfig = nil
         pendingTranslationText = nil

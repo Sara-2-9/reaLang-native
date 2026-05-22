@@ -70,6 +70,19 @@ All primo avvio l'app richiede:
 
 Italiano, Inglese (US/UK), Spagnolo, Francese, Tedesco, Giapponese, Cinese Semplificato, Portoghese (Brasile), Russo, Coreano, Arabo.
 
+## Screenshot
+
+<p align="center">
+  <img src="screenshots/IMG_2853.PNG" width="250" />
+  <img src="screenshots/IMG_2854.PNG" width="250" />
+  <img src="screenshots/IMG_2855.PNG" width="250" />
+</p>
+<p align="center">
+  <img src="screenshots/IMG_2856.PNG" width="250" />
+  <img src="screenshots/IMG_2857.PNG" width="250" />
+  <img src="screenshots/IMG_2859.PNG" width="250" />
+</p>
+
 ## Note
 
 - L'audio del riconoscimento vocale viene inviato ai server Apple a meno che il riconoscimento on-device non sia disponibile per la lingua selezionata.
