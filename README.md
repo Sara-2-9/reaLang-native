@@ -5,22 +5,24 @@ ReaLang è un'app iOS per la traduzione conversazionale bilingue in tempo reale.
 ## Funzionamento
 
 1. **Imposta le lingue** — All'avvio, seleziona la lingua di ciascun utente tra le 12 disponibili.
-2. **Tieni premuto e parla** — Usa i pulsanti push-to-talk per catturare il parlato.
-3. **Ascolta la traduzione** — Il testo viene trascritto, tradotto e letto automaticamente.
-4. **Leggi la conversazione** — Lo storico dei messaggi mostra chi ha detto cosa e in quale lingua.
+2. **Scegli la modalità** — Avvia una **Conversazione** push-to-talk oppure la **Traduzione Real-Time** continua (richiede cuffie).
+3. **Tieni premuto e parla** (Conversazione) — Usa i pulsanti push-to-talk per catturare il parlato.
+4. **Ascolta la traduzione** — Il testo viene trascritto, tradotto e letto automaticamente.
+5. **Leggi la conversazione** — Lo storico dei messaggi mostra chi ha detto cosa e in quale lingua.
 
 ## Requisiti
 
 - iOS 26.0+
 - Xcode 16.0+
 - Dispositivo fisico iPhone (il riconoscimento vocale live non è supportato su Simulatore)
+- Cuffie / auricolari per la modalità Real-Time (per evitare feedback audio)
 
 ## Stack Tecnologico
 
 | Componente | Tecnologia |
 |------------|------------|
 | UI | SwiftUI (Observation) |
-| Speech-to-Text | `SFSpeechRecognizer` |
+| Speech-to-Text | `SFSpeechRecognizer` (continuous + push-to-talk) |
 | Traduzione | `Translation` framework |
 | Text-to-Speech | `AVSpeechSynthesizer` |
 | Audio | `AVAudioEngine` + `AVAudioSession` |
@@ -49,7 +51,7 @@ xcodebuild -project reaLang-native.xcodeproj \
            build
 ```
 
-Per eseguire su dispositivo, apri `reaLang-native.xcodeproj` in Xcode, seleziona il tuo iPhone e premi `Cmd+R`.
+Per eseguire su dispositivo, apri `reaLang-native.xcodeproj` in Xcode, seleziona il tuo iPhone e premi `Cmd+R`. L'app supporta anche l'installazione wireless su dispositivi paired.
 
 ## Permessi
 
@@ -60,11 +62,16 @@ All primo avvio l'app richiede:
 
 ## Architettura
 
-- **`ConversationSession`** — Stato centrale `@Observable` che gestisce il flusso della conversazione, i permessi e gli errori.
-- **`SpeechRecognitionService`** — Gestisce l'autorizzazione del microfono, la registrazione e il riconoscimento vocale.
+- **`ConversationSession`** — Stato centrale `@Observable` che gestisce il flusso della conversazione push-to-talk, i permessi e gli errori.
+- **`RealTimeSession`** — Orchestrazione della traduzione continua con pipeline `AsyncStream`, chunking per punteggiatura e timer di stabilizzazione.
+- **`SpeechRecognitionService`** — Gestisce l'autorizzazione del microfono, la registrazione e il riconoscimento vocale per il push-to-talk.
+- **`StreamingSpeechService`** — Riconoscimento continuo con auto-restart e gestione interruzioni audio.
 - **`TextToSpeechService`** — Wrapper attorno ad `AVSpeechSynthesizer` per la sintesi vocale.
-- **`ConversationView`** — Schermata principale con la lista messaggi e i controlli push-to-talk.
-- **`LanguageSetupView`** — Schermata iniziale per la scelta delle due lingue.
+- **`StreamingTTSService`** — Coda TTS con tracciamento dello stato `isSpeaking`.
+- **`AudioRouteService`** — Rilevamento cuffie / audio esterno; blocca la modalità Real-Time se vengono scollegate.
+- **`ConversationView`** — Schermata principale con la lista messaggi, cronologia stati e i controlli push-to-talk.
+- **`RealTimeTranslationView`** — Schermata di traduzione continua con indicatori di stato animati, testo live e pulsante di avvio/arresto.
+- **`LanguageSetupView`** — Schermata iniziale per la scelta delle due lingue con due pulsanti affiancati (Conversazione / Real-Time).
 
 ## Lingue supportate
 
@@ -73,7 +80,7 @@ Italiano, Inglese (US/UK), Spagnolo, Francese, Tedesco, Giapponese, Cinese Sempl
 ## Screenshot
 
 <p align="center">
-  <img src="screenshots/IMG_2853.PNG" width="250" />
+  <img src="screenshots/setup-languages.PNG" width="250" />
   <img src="screenshots/IMG_2854.PNG" width="250" />
   <img src="screenshots/IMG_2855.PNG" width="250" />
 </p>
@@ -81,6 +88,11 @@ Italiano, Inglese (US/UK), Spagnolo, Francese, Tedesco, Giapponese, Cinese Sempl
   <img src="screenshots/IMG_2856.PNG" width="250" />
   <img src="screenshots/IMG_2857.PNG" width="250" />
   <img src="screenshots/IMG_2859.PNG" width="250" />
+</p>
+<p align="center">
+  <img src="screenshots/realtime-idle.PNG" width="250" />
+  <img src="screenshots/realtime-active.PNG" width="250" />
+  <img src="screenshots/realtime-longer.PNG" width="250" />
 </p>
 
 ## Note
