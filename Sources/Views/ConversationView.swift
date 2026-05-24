@@ -12,21 +12,6 @@ struct ConversationView: View {
             phaseLogView
             controls
         }
-        .translationTask(session.translationConfig) { translationSession in
-            guard let text = await MainActor.run(body: { session.pendingTranslationText }) else { return }
-            do {
-                let response = try await Task {
-                    try await translationSession.translate(text)
-                }.value
-                await MainActor.run {
-                    session.finalizeTranslation(response: response)
-                }
-            } catch {
-                await MainActor.run {
-                    session.handleTranslationError(error)
-                }
-            }
-        }
         .navigationTitle("Conversazione")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

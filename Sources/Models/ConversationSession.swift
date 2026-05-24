@@ -31,7 +31,6 @@ final class ConversationSession {
     var languageA: Locale = .init(identifier: "it_IT")
     var languageB: Locale = .init(identifier: "en_US")
 
-    // SwiftUI translation task configuration
     private(set) var translationConfig: TranslationSession.Configuration?
     private(set) var pendingTranslationText: String?
     private var pendingUserA: Bool?
@@ -39,6 +38,7 @@ final class ConversationSession {
     private let speechService = SpeechRecognitionService()
     private let ttsService = TextToSpeechService()
     private var idleTask: Task<Void, Never>?
+    private var translationTask: Task<Void, Never>?
 
     private func setPhase(_ newPhase: ConversationPhase) {
         phase = newPhase
@@ -57,6 +57,11 @@ final class ConversationSession {
         idleTask = nil
     }
 
+    private func cancelTranslationTask() {
+        translationTask?.cancel()
+        translationTask = nil
+    }
+
     // MARK: - Permissions
 
     func requestPermissions() async -> Bool {
@@ -70,6 +75,7 @@ final class ConversationSession {
     func startListening(userA: Bool) async {
         os_log("[reaLang] startListening called, userA: %{public}d, isListeningA: %{public}d, isListeningB: %{public}d", log: .default, type: .info, userA, isListeningA, isListeningB)
         cancelIdleTask()
+        cancelTranslationTask()
         guard !isListeningA && !isListeningB else {
             os_log("[reaLang] BLOCKED: already listening", log: .default, type: .info)
             return
@@ -129,6 +135,11 @@ final class ConversationSession {
                 source: source.language,
                 target: target.language
             )
+
+            translationTask = Task { [weak self] in
+                guard let self else { return }
+                await self.performTranslation()
+            }
         } catch {
             os_log("[reaLang] ERROR in startListening: %{public}@", log: .default, type: .info, error.localizedDescription)
             setPhase(.error)
@@ -145,6 +156,23 @@ final class ConversationSession {
         isListeningA = false
         isListeningB = false
         speechService.stopRecording()
+    }
+
+    func performTranslation() async {
+        guard !Task.isCancelled,
+              let config = translationConfig,
+              let source = config.source,
+              let text = pendingTranslationText else { return }
+        do {
+            let session = try await TranslationSession(installedSource: source, target: config.target)
+            guard !Task.isCancelled else { return }
+            let response = try await session.translate(text)
+            guard !Task.isCancelled else { return }
+            finalizeTranslation(response: response)
+        } catch {
+            guard !Task.isCancelled else { return }
+            handleTranslationError(error)
+        }
     }
 
     func finalizeTranslation(response: TranslationSession.Response) {
@@ -199,6 +227,7 @@ final class ConversationSession {
     func endConversation() {
         stopListening()
         cancelIdleTask()
+        cancelTranslationTask()
         setPhase(.idle)
         messages.removeAll()
         translationConfig = nil
