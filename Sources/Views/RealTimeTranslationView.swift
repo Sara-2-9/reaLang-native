@@ -74,7 +74,6 @@ struct RealTimeTranslationView: View {
             )
         }
         .padding()
-        .background(.ultraThinMaterial)
     }
 
     private var textAreas: some View {
@@ -159,7 +158,6 @@ struct RealTimeTranslationView: View {
                 .accessibilityHidden(true)
         }
         .padding(.vertical, 24)
-        .background(.ultraThinMaterial)
     }
 
     // MARK: - Helpers

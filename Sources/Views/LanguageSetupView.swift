@@ -27,25 +27,27 @@ struct LanguageSetupView: View {
                 languageSection(title: "Utente B", selection: $session.languageB)
             }
             .navigationTitle("ReaLang")
-            .toolbar {
-                ToolbarItem(placement: .bottomBar) {
-                    VStack(spacing: 8) {
-                        Button("Avvia Conversazione") {
-                            path.append(Destination.conversation)
-                        }
-                        .buttonStyle(.borderedProminent)
-                        .controlSize(.large)
-                        .disabled(session.languageA.identifier == session.languageB.identifier)
-
-                        Button("Traduzione Real-Time") {
-                            path.append(Destination.realTimeTranslation)
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.regular)
-                        .disabled(session.languageA.identifier == session.languageB.identifier || !audioRouteService.isHeadsetConnected)
+            .safeAreaInset(edge: .bottom) {
+                HStack(spacing: 16) {
+                    Button {
+                        path.append(Destination.conversation)
+                    } label: {
+                        Label("Conversazione", systemImage: "bubble.left.and.bubble.right.fill")
                     }
-                    .padding(.bottom)
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.regular)
+                    .disabled(session.languageA.identifier == session.languageB.identifier)
+
+                    Button {
+                        path.append(Destination.realTimeTranslation)
+                    } label: {
+                        Label("Real-Time", systemImage: "bolt.fill")
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.regular)
+                    .disabled(session.languageA.identifier == session.languageB.identifier || !audioRouteService.isHeadsetConnected)
                 }
+                .padding()
             }
             .navigationDestination(for: Destination.self) { destination in
                 switch destination {
