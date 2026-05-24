@@ -13,7 +13,7 @@ final class SpeechRecognitionService: @unchecked Sendable {
 
     // MARK: - Permissions
 
-    func requestSpeechAuthorization() async -> Bool {
+    nonisolated func requestSpeechAuthorization() async -> Bool {
         await withCheckedContinuation { continuation in
             SFSpeechRecognizer.requestAuthorization { status in
                 continuation.resume(returning: status == .authorized)
@@ -21,7 +21,7 @@ final class SpeechRecognitionService: @unchecked Sendable {
         }
     }
 
-    func requestMicrophoneAuthorization() async -> Bool {
+    nonisolated func requestMicrophoneAuthorization() async -> Bool {
         await withCheckedContinuation { continuation in
             AVAudioApplication.requestRecordPermission { granted in
                 continuation.resume(returning: granted)

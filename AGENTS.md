@@ -53,14 +53,19 @@ reaLang-native/
 │   │   └── ConversationTranslatorApp.swift   # @main entry point
 │   ├── Models/
 │   │   ├── ConversationSession.swift         # Observable state machine & business logic
+│   │   ├── RealTimeSession.swift             # Real-time translation orchestration (chunking + pipeline)
 │   │   ├── Message.swift                     # Immutable data model for chat bubbles
 │   │   └── ConversationError.swift           # LocalizedError enum (Italian strings)
 │   ├── Services/
 │   │   ├── SpeechRecognitionService.swift    # Mic auth, recording, speech recognition
-│   │   └── TextToSpeechService.swift         # AVSpeechSynthesizer wrapper
+│   │   ├── StreamingSpeechService.swift      # Continuous speech-to-text with auto-restart
+│   │   ├── TextToSpeechService.swift         # AVSpeechSynthesizer wrapper
+│   │   ├── StreamingTTSService.swift         # Queued TTS with speaking-state tracking
+│   │   └── AudioRouteService.swift           # Headset / external audio detection
 │   └── Views/
 │       ├── LanguageSetupView.swift           # Language picker + navigation
 │       ├── ConversationView.swift            # Main chat + push-to-talk controls
+│       ├── RealTimeTranslationView.swift     # Real-time translation UI (live text + start/stop)
 │       ├── MessageBubbleView.swift           # Individual chat bubble UI
 │       └── PushToTalkButton.swift            # Hold-to-talk button with gesture
 ├── Resources/
@@ -162,7 +167,15 @@ When adding new permission requirements, always provide Italian usage descriptio
 
 ## Testing
 
-- **No automated test targets** currently exist in the project. If tests are added, create a new test target in `project.yml` and regenerate the project.
+- **Test target:** `reaLangNativeTests` (Swift Testing) — defined in `project.yml`, sources under `Tests/`.
+- **Run tests from the command line:**
+  ```bash
+  xcodebuild -project reaLang-native.xcodeproj \
+             -scheme reaLangNative \
+             -sdk iphonesimulator \
+             -destination 'platform=iOS Simulator,name=iPhone 17' \
+             test
+  ```
 - **Manual testing checklist:**
   1. Grant microphone and speech permissions on first launch.
   2. Select two different languages on the setup screen.

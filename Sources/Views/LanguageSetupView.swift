@@ -3,6 +3,7 @@ import SwiftUI
 struct LanguageSetupView: View {
     @Bindable var session: ConversationSession
     @State private var path = NavigationPath()
+    @State private var audioRouteService = AudioRouteService()
 
     private let availableLanguages: [Locale] = [
         .init(identifier: "it_IT"),
@@ -28,18 +29,33 @@ struct LanguageSetupView: View {
             .navigationTitle("ReaLang")
             .toolbar {
                 ToolbarItem(placement: .bottomBar) {
-                    Button("Avvia Conversazione") {
-                        path.append(Destination.conversation)
+                    VStack(spacing: 8) {
+                        Button("Avvia Conversazione") {
+                            path.append(Destination.conversation)
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.large)
+                        .disabled(session.languageA.identifier == session.languageB.identifier)
+
+                        Button("Traduzione Real-Time") {
+                            path.append(Destination.realTimeTranslation)
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.regular)
+                        .disabled(session.languageA.identifier == session.languageB.identifier || !audioRouteService.isHeadsetConnected)
                     }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.large)
-                    .disabled(session.languageA.identifier == session.languageB.identifier)
+                    .padding(.bottom)
                 }
             }
             .navigationDestination(for: Destination.self) { destination in
                 switch destination {
                 case .conversation:
                     ConversationView(session: session)
+                case .realTimeTranslation:
+                    RealTimeTranslationView(
+                        sourceLanguage: session.languageA,
+                        targetLanguage: session.languageB
+                    )
                 }
             }
         }
@@ -63,4 +79,5 @@ struct LanguageSetupView: View {
 
 private enum Destination: Hashable {
     case conversation
+    case realTimeTranslation
 }

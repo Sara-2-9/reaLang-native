@@ -28,3 +28,29 @@ targets:
       - sdk: Speech.framework
       - sdk: AVFoundation.framework
       - sdk: Translation.framework
+
+  reaLangNativeTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - Tests
+    dependencies:
+      - target: reaLangNative
+    settings:
+      base:
+        SWIFT_VERSION: "6.0"
+        TARGETED_DEVICE_FAMILY: "1"
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/reaLang.app/reaLang"
+        BUNDLE_LOADER: "$(TEST_HOST)"
+        GENERATE_INFOPLIST_FILE: YES
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: 64LFM6JL2J
+
+schemes:
+  reaLangNative:
+    build:
+      targets:
+        reaLangNative: all
+    test:
+      targets:
+        - name: reaLangNativeTests
